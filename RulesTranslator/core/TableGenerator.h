@@ -12,21 +12,21 @@
 #include "Preprocessor.h"
 
 namespace rules_translator {
-    
-    class TableGenerator_Impl;
-    
-    // Generate tables according to LR(1) rules
-    // the table will be written to the target file
-    class TableGenerator {
-        TableGenerator_Impl *impl;
-    public:
-        TableGenerator(FileInteractor &, RulesInfo &);
-        TableGenerator(const TableGenerator &) = delete;
-        TableGenerator &operator=(const TableGenerator&) = delete;
-        ~TableGenerator();
-        void generate();
-        void testGenerate();
-    };
+
+	class TableGenerator_Impl;
+
+	// Generate tables according to LR(1) rules
+	// the table will be written to the target file
+	class TableGenerator {
+		TableGenerator_Impl *impl;
+
+	public:
+		TableGenerator(FileInteractor&, RulesInfo*);
+		TableGenerator(const TableGenerator&) = delete;
+		TableGenerator &operator=(const TableGenerator&) = delete;
+		~TableGenerator();
+		void generate();
+	};
 
 }
 

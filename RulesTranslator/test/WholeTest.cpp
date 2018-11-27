@@ -7,21 +7,22 @@
 //
 
 #include "WholeTest.h"
-#include "test.h"
 #include "../core/Preprocessor.h"
 #include "../core/TableGenerator.h"
 #include "../core/AnalyzerGenerator.h"
 
-namespace rules_translator::test {
-    
-    void test() {
-        FileInteractor fi(ORIGIN_FILE_NAME, TARGET_FILE_NAME);
-        Preprocessor pss(fi);
-        RulesInfo *info = pss.generateInfo();
-        TableGenerator generator(fi, *info);
-        generator.testGenerate();
-        AnalyzerGenerator analyzer(fi);
-        analyzer.generate();
-    }
-    
+namespace rules_translator::test
+{
+	void test()
+	{
+		FileInteractor fi(
+			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule_V1.tsl",
+			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule_V1.cpp");
+		Preprocessor pss(fi);
+		RulesInfo *info = pss.generateInfo();
+		TableGenerator generator(fi, info);
+		generator.generate();
+		AnalyzerGenerator analyzer(fi);
+		analyzer.generate();
+	}
 }

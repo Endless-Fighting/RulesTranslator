@@ -16,32 +16,29 @@ using std::vector;
 
 namespace rules_translator {
 
-    using symbol_type = size_t;
-    struct symbol {
-        bool isTerminate = false;
-        symbol_type type;
-        symbol() = default;
-        symbol(bool a, symbol_type t): isTerminate(a), type(t) {}
-        bool operator==(const symbol &s) const {
-            return s.type == type && s.isTerminate == isTerminate;
-        }
-    };
+	using symbol_type = size_t;
+	struct symbol {
+		bool isTerminate = false;
+		symbol_type type;
+		symbol() = default;
+		symbol(bool a, symbol_type t) : isTerminate(a), type(t) {}
+		bool operator==(const symbol &s) const {
+			return s.type == type && s.isTerminate == isTerminate;
+		}
+	};
 
-    struct Production {
-        symbol_type left;
-        vector<symbol> right;
-        size_t productionId;
-//        string processName;
-//        Production(const symbol_type &left, const vector<symbol> &right, const string &processName): left(left), right(right), processName(processName) {}
-//        Production(const symbol_type &left, const vector<symbol> &&right, const string &processName): left(left), right(right), processName(processName) {}
-        Production() = default;
-        Production(Production &&p): left(p.left), right(std::move(p.right)), productionId(p.productionId) {}
-        Production(const Production&) = default;
-        Production &operator=(const Production &) = default;
-        bool operator==(const Production &p) const {
-            return productionId == p.productionId;
-        }
-    };
+	struct Production {
+		symbol_type left;
+		vector<symbol> right;
+		size_t productionId;
+		Production() = default;
+		Production(Production &&p) : left(p.left), right(std::move(p.right)), productionId(p.productionId) {}
+		Production(const Production&) = default;
+		Production &operator=(const Production &) = default;
+		bool operator==(const Production &p) const {
+			return productionId == p.productionId;
+		}
+	};
 }
 
 
