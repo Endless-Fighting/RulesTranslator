@@ -39,9 +39,6 @@ namespace std {
 	class hash<rules_translator::ProductionWithDoc> {
 	public:
 		size_t operator()(const rules_translator::ProductionWithDoc &p) const {
-			//            using namespace rules_translator::utils;
-			//            size_t r = p.p.productionId;
-			//            r |= shift_change(p.docPos, 8, 56);
 			return p.p.productionId | rules_translator::utils::shift_change(p.docPos, 8, 56);
 		}
 	};
