@@ -430,6 +430,7 @@ namespace rules_translator {
 		template <bool consoleOutput = false>
 		void outputResult() {
 			stringstream ss;
+
 			auto outputCounselTable = [&ss](const string &name, CounselTable &table) {
 				ss << "const ll " << name << "[" << table.lineAmount() << "][" << table.columnAmount() << "] = {" << std::endl;
 				for (size_t i = 0; i < table.lineAmount(); ++i) {
@@ -440,7 +441,8 @@ namespace rules_translator {
 				}
 				ss << "};" << std::endl;
 			};
-			ss << "using ll = long long;";
+
+			ss << "using ll = int;" << std::endl;
 
 			// action_table
 			outputCounselTable("action_table", actionTable);

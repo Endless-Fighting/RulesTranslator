@@ -106,10 +106,6 @@ namespace rules_translator {
 				generateException("Expected a class name of enum class.");
 			string enum_class_name = buffer->content;
 			buffer = fi.read();
-			//            optional<rc> buffer = fi.read();
-			//            if (buffer.value().type != rct::word) generateException("Expected a word to specify terminate class name");
-			//            info.terminate_class_name = std::move(buffer->content);
-			//            buffer = fi.read();
 			if (buffer.value().type != rct::block)
 				generateException("Expected a class body to specify all the terminate symbols");
 			string &s = buffer->content;
@@ -149,8 +145,7 @@ namespace rules_translator {
 			getAlongPath(path_get_type, 3, buffer);
 			if (buffer.value().type != rct::word)
 				generateException("Expected a word to specify the name of the function used to get type");
-			fi.write(enum_class_name).write(" (*get_type)(const token_type &) = &").write(buffer->content).writeln(";");
-			//            info.get_type = std::move(buffer->content);
+			fi.write(enum_class_name).write(" (*get_type)(const token_type&) = &").write(buffer->content).writeln(";");
 			fi.read();
 		}
 		// the return type is the first nonterminate
@@ -177,20 +172,13 @@ namespace rules_translator {
 					generateException("Expected a semicolon after a using statement");
 				buffer = fi.read();
 			}
-			//            if (buffer.value().type != rct::word || terminate_typeMap.find(buffer->content) != terminate_typeMap.end())
-			//                generateException("Expected a kind of nonterminate symbol");
-			//
-			//            s.type = getNonterminateType(buffer->content);
 
-						// generate codes
+			// generate codes
 			fi.writeln("class default_object_type {};");
 			fi.write("using object_type = std::variant<");
 			for (auto &s : objectTypes)
 				fi.write(s).write(", ");
-			fi.write("default_object_type, token_type>;");
-			//            fi.write(info.token_type).writeln(">;");
-			fi.writeln("template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };");
-			fi.writeln("template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;");
+			fi.writeln("default_object_type, token_type>;");
 
 			return buffer;
 		}
