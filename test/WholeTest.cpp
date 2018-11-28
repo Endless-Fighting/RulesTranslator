@@ -16,13 +16,16 @@ namespace rules_translator::test
 	void test()
 	{
 		FileInteractor fi(
-			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule_V1.tsl",
-			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule_V1.cpp");
+			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule.tsl",
+			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule.h");
+		AnalyzerGenerator analyzer(fi);
+		analyzer.generate_head();
+
 		Preprocessor pss(fi);
 		RulesInfo *info = pss.generateInfo();
 		TableGenerator generator(fi, info);
 		generator.generate();
-		AnalyzerGenerator analyzer(fi);
-		analyzer.generate();
+
+		analyzer.generate_tail();
 	}
 }

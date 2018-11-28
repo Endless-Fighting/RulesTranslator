@@ -30,7 +30,8 @@ namespace rules_translator {
         AnalyzerGenerator(const AnalyzerGenerator &) = delete;
         AnalyzerGenerator &operator=(const AnalyzerGenerator &) = delete;
         ~AnalyzerGenerator();
-        void generate();
+        void generate_tail() const;
+        void generate_head() const;
     };
     
 }

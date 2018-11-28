@@ -26,11 +26,13 @@ namespace rules_translator::utils {
 
 	string &trimDivider(string &s) {
 		for (string::iterator it = s.begin(); it != s.end(); )
+		{
 			if (isDivider(*it))
 				it = s.erase(it);
 			else ++it;
+		}
 
-			return s;
+		return s;
 	}
 
 	string &trimMeaninglessDividers(string &s) {

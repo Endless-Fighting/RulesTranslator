@@ -79,8 +79,15 @@ namespace rules_translator {
 			origin.close();
 			target.close();
 		}
+
+
 	public:
-		FileInteractor_Impl(const string &originalFilePath, const string &targetFilePath) : origin(originalFilePath, std::ios::in), target(targetFilePath, std::ios::trunc | std::ios::out) {
+
+		FileInteractor_Impl(const string &originalFilePath, const string &targetFilePath)
+			:
+			origin(originalFilePath, std::ios::in),
+			target(targetFilePath, std::ios::trunc | std::ios::out)
+		{
 			if (originalFilePath.size() < 5 || originalFilePath.substr(originalFilePath.length() - 4, -1) != ".tsl")
 				throw TranslateException("The postfix of original file should be tsl");
 			if (!origin.is_open() || !target.is_open())

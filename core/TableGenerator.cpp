@@ -25,6 +25,7 @@ unordered_map<rules_translator::ProductionWithDoc,
 
 std::ostream& console_out = std::cout;
 #define cout out
+const char* out_path = "C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule.lr1";
 
 namespace std {
 	template <>
@@ -430,7 +431,7 @@ namespace rules_translator {
 		void outputResult() {
 			stringstream ss;
 			auto outputCounselTable = [&ss](const string &name, CounselTable &table) {
-				ss << "constexpr const ll " << name << "[" << table.lineAmount() << "][" << table.columnAmount() << "] = {" << std::endl;
+				ss << "const ll " << name << "[" << table.lineAmount() << "][" << table.columnAmount() << "] = {" << std::endl;
 				for (size_t i = 0; i < table.lineAmount(); ++i) {
 					ss << "{ ";
 					for (size_t j = 0; j < table.columnAmount(); ++j)
@@ -445,14 +446,14 @@ namespace rules_translator {
 			outputCounselTable("action_table", actionTable);
 
 			// production_elementAmount_table
-			ss << "constexpr const size_t production_elementAmount_table[] = {" << std::endl;
+			ss << "const size_t production_elementAmount_table[] = {" << std::endl;
 
 			for (auto &pro : info->productions)
 				ss << pro.right.size() << "," << std::endl;
 			ss << "};" << std::endl;
 
 			// production_left_table
-			ss << "constexpr const size_t production_left_table[] = {" << std::endl;
+			ss << "const size_t production_left_table[] = {" << std::endl;
 			for (auto &pro : info->productions)
 				ss << pro.left << "," << std::endl;
 			ss << "};" << std::endl;
@@ -461,7 +462,7 @@ namespace rules_translator {
 			outputCounselTable("goto_table", gotoTable);
 
 			// eof
-			ss << "constexpr const size_t eof = " << info->eof << ";" << std::endl;
+			ss << "constexpr std::size_t eof = " << info->eof << ";" << std::endl;
 
 			if constexpr (consoleOutput)cout << ss.str() << endl;
 			else fi.writeln(ss.str());
@@ -477,7 +478,6 @@ namespace rules_translator {
 			actionTable(info->eof + 1),
 			gotoTable(info->nonterminateType_amount)
 		{
-			const char* out_path = "C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule_V1.lr1";
 			out.open(out_path, std::ios::out | std::ios::trunc);
 #undef cout
 			if (!out.is_open())
