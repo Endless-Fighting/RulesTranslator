@@ -16,6 +16,8 @@ using std::stringstream;
 using std::unordered_set;
 
 #include <iostream>
+#include <vector>
+#include <deque>
 #include <fstream>
 using std::endl;
 
@@ -26,6 +28,7 @@ unordered_map<rules_translator::ProductionWithDoc,
 std::ostream& console_out = std::cout;
 #define cout out
 const char* out_path = "C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule.lr1";
+
 
 namespace std {
 	template <>
@@ -78,10 +81,35 @@ namespace std {
 }
 
 
+
+#define output_log
+#define collision_process
+#include <cassert>
+#ifdef collision_process
+#define log_collision_macro(pre, shift, s, v) do{ \
+            std::string SHIFT = std::string("SHIFT: \"") + info->terminate2StringMap[s.type] + "\" " \
+                                + std::to_string(pre) + "->" + std::to_string(shift);    \
+			std::ostringstream os;                                                       \
+			const auto &p = info->productions[-v];                                       \
+			os << "Reduce: " << condition << ", id: " << p.productionId << ", "          \
+			<< info->nonterminate2StringMap[p.left] << ": { ";                           \
+			for (const auto &sym : p.right)                                              \
+				if (sym.isTerminate)                                                     \
+					os << "\"" << info->terminate2StringMap[sym.type] << "\" ";          \
+				else                                                                     \
+					os << info->nonterminate2StringMap[sym.type] << " ";                 \
+			os << "};";                                                                  \
+			std::string REDUCE = os.str();                                               \
+			log_collision.emplace_back(std::move(SHIFT), std::move(REDUCE));             \
+} while(0);
+#endif // collision_process
+
+
 namespace rules_translator {
 
 	class TableGenerator_Impl {
 
+		std::deque<std::pair<std::string, std::string>> log_collision; // for log collision
 		std::ofstream out; // for file output
 
 		FileInteractor &fi;
@@ -229,10 +257,9 @@ namespace rules_translator {
 
 				// add all the production with the specified left and the content in the set
 				auto putSet = [&p, this, &change](const symbol_type left, const unordered_set<symbol_type> &s) {
-					//                    const auto &vp = left_map.find(left)->second;
-					for (auto &pro : left_map.find(left)->second) {
+					for (auto &pro : left_map.find(left)->second)
+					{
 						auto &nset = p[ProductionWithDoc(*pro)]; // this phrase will also create the target
-
 						size_t os = nset.size();
 						nset.insert(s.begin(), s.end());
 						change += (nset.size() != os);
@@ -292,7 +319,9 @@ namespace rules_translator {
 						}
 					}
 				}
+
 			};
+
 			tracePackage();
 
 			size_t &condition = package_condition_map[p];
@@ -308,9 +337,18 @@ namespace rules_translator {
 			auto fillShiftGotoAction = [this, condition, pre_condition, &s]() {
 				ll &v = s.isTerminate ? actionTable[pre_condition][s.type] : gotoTable[pre_condition][s.type];
 				// in fact, no collision for GOTO, just for assignment below.
-				// just shift-reduce or reduce-reduce collision.
+				// just shift-reduce or (reduce-reduce???) collision.
+				bool is_collision = false;
 				if (v != 0 && v != condition)
+				{
+					assert(v < 0); // shift-reduce
+#ifdef collision_process
+					log_collision_macro(pre_condition, condition, s, v);
+					return;
+#else
 					generateCollisionException(pre_condition, s, v, condition);
+#endif // collision_process
+				}
 				v = condition;
 
 				// shift
@@ -321,7 +359,7 @@ namespace rules_translator {
 				else
 					cout << "GOTO: <" << info->nonterminate2StringMap[s.type] << "> "
 					<< pre_condition << "->" << condition << endl;
-			};
+			}; // end lambda fillShiftGotoAction();
 
 
 			cout << "\n-------------------------------------------------------\n" << std::endl;
@@ -330,8 +368,8 @@ namespace rules_translator {
 			// output new condition
 			if (!is_condition_already) // only output 1 time of new condition
 				if constexpr (test)outputConditionPackage<false>(p, condition);
-			fillShiftGotoAction();
 
+			fillShiftGotoAction();
 
 			// if already existed
 			if (is_condition_already)
@@ -344,16 +382,17 @@ namespace rules_translator {
 				if (pro.end())
 				{
 					ll *line = actionTable[condition];
-					const ll targetValue = -((ll)pro.p.productionId);
+					const ll reduceID = -((ll)pro.p.productionId);
 					cout << "Reduce: " << condition << ", id: " << pro.p.productionId << endl;
 					for (auto n : symbol_type_set)
 					{
 						ll &v = line[n];
-						if (v && v != targetValue)
-						{
-							generateCollisionException(condition, symbol(true, n), v, targetValue);
-						}
-						v = targetValue;
+						if (v && v != reduceID)
+							generateCollisionException(
+								condition, symbol(true, n),
+								v, reduceID);
+
+						v = reduceID;
 					}
 				}
 			} // end reduce
@@ -386,22 +425,27 @@ namespace rules_translator {
 		} // end function void calculateCondition();
 
 
-		// REDUCE: condition 
+		// SHIFT  : condition > 0
+		// REDUCE : id < 0
 		void generateCollisionException(
 			ll condition,
 			symbol sym,
-			ll shift_cond,
-			ll newCome)
+			ll cond_or_id1,
+			ll cond_or_id2)
 		{
 
 			cout << "\n-------------------------------------------------------\n" << std::endl;
 
 			cout << "Collision occurs:" << endl;
-			if (sym.isTerminate)
-				cout << "SHIFT: \"" << info->terminate2StringMap[sym.type] << "\" "
-				<< condition << "->" << shift_cond << endl;
-			else
-				cout << info->nonterminate2StringMap[sym.type] << endl;
+
+			if (cond_or_id1 > 0 || cond_or_id2 > 0) {
+				const int shift = (cond_or_id1 > cond_or_id2) ? cond_or_id1 : cond_or_id2;
+				if (sym.isTerminate)
+					cout << "SHIFT: \"" << info->terminate2StringMap[sym.type] << "\" "
+					<< condition << "->" << shift << endl;
+				else
+					cout << "WTF??? " << info->nonterminate2StringMap[sym.type] << endl;
+			}
 
 			auto outputProduction = [this, condition](ll id) {
 				const auto &p = info->productions[id];
@@ -415,13 +459,11 @@ namespace rules_translator {
 				cout << "};" << endl;
 			};
 
-			if (shift_cond <= 0)
-				outputProduction(-shift_cond);
+			if (cond_or_id1 <= 0)
+				outputProduction(-cond_or_id1);
 
-			if (newCome > 0)
-				cout << "newly come Condition <" << newCome << ">." << endl;
-			else
-				outputProduction(-newCome);
+			if (cond_or_id2 <= 0)
+				outputProduction(-cond_or_id2);
 
 			throw TranslateException("Collision occurs!");
 		}
@@ -481,14 +523,11 @@ namespace rules_translator {
 			gotoTable(info->nonterminateType_amount)
 		{
 			out.open(out_path, std::ios::out | std::ios::trunc);
-#undef cout
 			if (!out.is_open())
 			{
-				std::cout << "C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule_V1.lr1" << std::endl;
+				console_out << "Can't open file: " << out_path << std::endl;
 				exit(0);
 			}
-
-#define cout out
 		}
 
 
@@ -538,10 +577,21 @@ namespace rules_translator {
 		~TableGenerator_Impl()
 		{
 			delete info;
+#ifdef output_log
+			out << "\n-------------------------------------------------------\n" << std::endl
+				<< "Collision choose list:" << std::endl
+				<< "\n-------------------------------------------------------" << std::endl;
+			for (auto const[str1, str2] : log_collision)
+			{
+				out << std::endl << str1 << std::endl << str2 << std::endl;
+				out << "\n-------------" << std::endl;
+			}
+#endif // output_log
 			out.close();
 		}
 
-	};
+
+	}; // end class TableGenerator_Impl;
 
 
 	TableGenerator::TableGenerator(FileInteractor &fi, RulesInfo *info) {
@@ -555,3 +605,4 @@ namespace rules_translator {
 	}
 
 }
+#undef cout
