@@ -109,7 +109,9 @@ namespace rules_translator {
 
 	class TableGenerator_Impl {
 
+#ifdef collision_process
 		std::deque<std::pair<std::string, std::string>> log_collision; // for log collision
+#endif // collision_process
 		std::ofstream out; // for file output
 
 		FileInteractor &fi;
