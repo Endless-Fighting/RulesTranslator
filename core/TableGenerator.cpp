@@ -346,6 +346,12 @@ namespace rules_translator {
 					assert(v < 0); // shift-reduce
 #ifdef collision_process
 					log_collision_macro(pre_condition, condition, s, v);
+					cout << "!!!!!!! Collision occurs, but we choose REDUCE rather than SHIFT !!!!!!!" << std::endl;
+					cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" "
+						<< pre_condition << "->" << condition << std::endl;
+					cout << "Reduce: " << pre_condition << ", id: " << -v
+						<< ", with following symbol \""
+						<< info->terminate2StringMap[s.type] << "\"" << std::endl;
 					return;
 #else
 					generateCollisionException(pre_condition, s, v, condition);
@@ -356,11 +362,11 @@ namespace rules_translator {
 				// shift
 				if (s.isTerminate)
 					cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" "
-					<< pre_condition << "->" << condition << endl;
+					<< pre_condition << "->" << condition << std::endl;
 				// goto
 				else
 					cout << "GOTO: <" << info->nonterminate2StringMap[s.type] << "> "
-					<< pre_condition << "->" << condition << endl;
+					<< pre_condition << "->" << condition << std::endl;
 			}; // end lambda fillShiftGotoAction();
 
 
