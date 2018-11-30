@@ -92,7 +92,7 @@ namespace std {
                                 + "]";                                                   \
 			std::ostringstream os;                                                       \
 			const auto &p = info->productions[-v];                                       \
-			os << "Reduce: [" << condition << "], id: " << p.productionId << ", "        \
+			os << "Reduce: [" << pre << "], id: " << p.productionId << ", "              \
 			<< info->nonterminate2StringMap[p.left] << ": { ";                           \
 			for (const auto &sym : p.right)                                              \
 				if (sym.isTerminate)                                                     \
@@ -617,8 +617,10 @@ namespace rules_translator {
 			out << "\n--------------------------------------------------------------------------------------------------------------\n" << std::endl
 				<< "Collision choose list: " << log_collision.size() << " entries" << std::endl
 				<< "\n--------------------------------------------------------------------------------------------------------------" << std::endl;
+			std::size_t no = 0;
 			for (auto const[str1, str2] : log_collision)
 			{
+				out << ++no << ".";
 				out << std::endl << str1 << std::endl << str2 << std::endl;
 				out << "\n-------------" << std::endl;
 			}
