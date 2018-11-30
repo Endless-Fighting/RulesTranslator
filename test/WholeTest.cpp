@@ -23,7 +23,7 @@ namespace rules_translator::test
 
 		Preprocessor pss(fi);
 		RulesInfo *info = pss.generateInfo();
-		TableGenerator generator(fi, info);
+		TableGenerator generator(fi, info); // info is destructed in ~TableGenerator();
 		generator.generate();
 
 		analyzer.generate_tail();

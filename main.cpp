@@ -19,7 +19,7 @@ void run()
 {
 	try {
 		rules_translator::test::test();
-		std::cout << "----------------------- done -----------------------" << std::endl;
+		std::cout << "--------------------------- done ---------------------------" << std::endl;
 	}
 	catch (std::string& ex) { std::cout << ex << "!!!!!!" << std::endl; }
 	catch (...) { std::cout << "Unknown Exception" << std::endl; }

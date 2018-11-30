@@ -87,11 +87,12 @@ namespace std {
 #include <cassert>
 #ifdef collision_process
 #define log_collision_macro(pre, shift, s, v) do{ \
-            std::string SHIFT = std::string("SHIFT: \"") + info->terminate2StringMap[s.type] + "\" " \
-                                + std::to_string(pre) + "->" + std::to_string(shift);    \
+            std::string SHIFT = std::string("SHIFT: \"") + info->terminate2StringMap[s.type] + "\" [" \
+                                + std::to_string(pre) + "->" + std::to_string(shift)     \
+                                + "]";                                                   \
 			std::ostringstream os;                                                       \
 			const auto &p = info->productions[-v];                                       \
-			os << "Reduce: " << condition << ", id: " << p.productionId << ", "          \
+			os << "Reduce: [" << condition << "], id: " << p.productionId << ", "        \
 			<< info->nonterminate2StringMap[p.left] << ": { ";                           \
 			for (const auto &sym : p.right)                                              \
 				if (sym.isTerminate)                                                     \
@@ -252,137 +253,141 @@ namespace rules_translator {
 		template <bool test = false>
 		void calculateCondition(ConditionPackage &p, const size_t pre_condition, const symbol &s)
 		{
-			const ConditionPackage pre_pack = p;
-			// find out the package
-			auto tracePackage = [&p, this]() {
-				size_t change = 1;
 
-				// add all the production with the specified left and the content in the set
-				auto putSet = [&p, this, &change](const symbol_type left, const unordered_set<symbol_type> &s) {
-					for (auto &pro : left_map.find(left)->second)
-					{
-						auto &nset = p[ProductionWithDoc(*pro)]; // this phrase will also create the target
-						size_t os = nset.size();
-						nset.insert(s.begin(), s.end());
-						change += (nset.size() != os);
-					}
-				};
+			// prepare and output
+			{
+				const ConditionPackage pre_pack = p;
+				// find out the package
+				auto tracePackage = [&p, this]() {
+					size_t change = 1;
 
-				while (change > 0) {
-					change = 0;
-					for (auto &it : p) {
-						const ProductionWithDoc &pwd = it.first;
-						// if needs reduce
-						if (pwd.end())
-							continue;
+					// add all the production with the specified left and the content in the set
+					auto putSet = [&p, this, &change](const symbol_type left, const unordered_set<symbol_type> &s) {
+						for (auto &pro : left_map.find(left)->second)
+						{
+							auto &nset = p[ProductionWithDoc(*pro)]; // this phrase will also create the target
+							size_t os = nset.size();
+							nset.insert(s.begin(), s.end());
+							change += (nset.size() != os);
+						}
+					};
 
-						else {
-							symbol s = pwd.getNext();
-							if (s.isTerminate)
+					while (change > 0) {
+						change = 0;
+						for (auto &it : p) {
+							const ProductionWithDoc &pwd = it.first;
+							// if needs reduce
+							if (pwd.end())
 								continue;
 
-							if (pwd.last())
-								putSet(s.type, it.second);
 							else {
-								const auto &followStringSymbol = pwd.getFollowString();
-								auto &fs = followStringSymbol[0]; // first symbol in following symbol string
-								unordered_set<size_t> ts;
-								if (fs.isTerminate)
-									ts.insert(fs.type);
-								else { // fs is nonterminate
-									const auto &temp = first.find(fs.type)->second;
-									ts.insert(temp.begin(), temp.end());
+								symbol s = pwd.getNext();
+								if (s.isTerminate)
+									continue;
 
-									size_t i = 1;
-									auto size = followStringSymbol.size();
-									for (; !followStringSymbol[i - 1].isTerminate &&
-										nullable.find(followStringSymbol[i - 1].type) != nullable.end() && i < size; ++i)
-									{
-										const auto &f = followStringSymbol[i];
-										if (f.isTerminate) {
-											ts.insert(f.type);
-											break;
+								if (pwd.last())
+									putSet(s.type, it.second);
+								else {
+									const auto &followStringSymbol = pwd.getFollowString();
+									auto &fs = followStringSymbol[0]; // first symbol in following symbol string
+									unordered_set<size_t> ts;
+									if (fs.isTerminate)
+										ts.insert(fs.type);
+									else { // fs is nonterminate
+										const auto &temp = first.find(fs.type)->second;
+										ts.insert(temp.begin(), temp.end());
+
+										size_t i = 1;
+										auto size = followStringSymbol.size();
+										for (; !followStringSymbol[i - 1].isTerminate &&
+											nullable.find(followStringSymbol[i - 1].type) != nullable.end() && i < size; ++i)
+										{
+											const auto &f = followStringSymbol[i];
+											if (f.isTerminate) {
+												ts.insert(f.type);
+												break;
+											}
+											const auto &fir = first[f.type];
+											ts.insert(fir.begin(), fir.end());
+
 										}
-										const auto &fir = first[f.type];
-										ts.insert(fir.begin(), fir.end());
-
+										// for if this is true, it also means i == size
+										if (!followStringSymbol[i - 1].isTerminate &&
+											nullable.find(followStringSymbol[i - 1].type) != nullable.end())
+											ts.insert(it.second.begin(), it.second.end());
+										// the same as:
+										//  for (auto st: it.second)
+										//     ts.insert(st);
 									}
-									// for if this is true, it also means i == size
-									if (!followStringSymbol[i - 1].isTerminate &&
-										nullable.find(followStringSymbol[i - 1].type) != nullable.end())
-										ts.insert(it.second.begin(), it.second.end());
-									// the same as:
-									//  for (auto st: it.second)
-									//     ts.insert(st);
-								}
 
-								putSet(s.type, ts);
+									putSet(s.type, ts);
+								}
 							}
 						}
 					}
-				}
 
-			};
+				};
 
-			tracePackage();
+				tracePackage();
 
-			size_t &condition = package_condition_map[p];
-			// a new condition
-			bool is_condition_already = true;
-			if (condition == 0)
-			{
-				condition = next_condition_id++;
-				is_condition_already = false;
-			}
-
-
-			auto fillShiftGotoAction = [this, condition, pre_condition, &s]() {
-				ll &v = s.isTerminate ? actionTable[pre_condition][s.type] : gotoTable[pre_condition][s.type];
-				// in fact, no collision for GOTO, just for assignment below.
-				// just shift-reduce or (reduce-reduce???) collision.
-				bool is_collision = false;
-				if (v != 0 && v != condition)
+				size_t &condition = package_condition_map[p];
+				// a new condition
+				bool is_condition_already = true;
+				if (condition == 0)
 				{
-					assert(v < 0); // shift-reduce
-#ifdef collision_process
-					log_collision_macro(pre_condition, condition, s, v);
-					cout << "!!!!!!! Collision occurs, but we choose REDUCE rather than SHIFT !!!!!!!" << std::endl;
-					cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" "
-						<< pre_condition << "->" << condition << std::endl;
-					cout << "Reduce: " << pre_condition << ", id: " << -v
-						<< ", with following symbol \""
-						<< info->terminate2StringMap[s.type] << "\"" << std::endl;
-					return;
-#else
-					generateCollisionException(pre_condition, s, v, condition);
-#endif // collision_process
+					condition = next_condition_id++;
+					is_condition_already = false;
 				}
-				v = condition;
-
-				// shift
-				if (s.isTerminate)
-					cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" "
-					<< pre_condition << "->" << condition << std::endl;
-				// goto
-				else
-					cout << "GOTO: <" << info->nonterminate2StringMap[s.type] << "> "
-					<< pre_condition << "->" << condition << std::endl;
-			}; // end lambda fillShiftGotoAction();
 
 
-			cout << "\n-------------------------------------------------------\n" << std::endl;
-			// output pre condition
-			if constexpr (test)outputConditionPackage<true>(pre_pack, condition, pre_condition);
-			// output new condition
-			if (!is_condition_already) // only output 1 time of new condition
-				if constexpr (test)outputConditionPackage<false>(p, condition);
+				auto fillShiftGotoAction = [this, condition, pre_condition, &s]() {
+					ll &v = s.isTerminate ? actionTable[pre_condition][s.type] : gotoTable[pre_condition][s.type];
+					// in fact, no collision for GOTO, just for assignment below.
+					// just shift-reduce or (reduce-reduce???) collision.
+					bool is_collision = false;
+					if (v != 0 && v != condition)
+					{
+						assert(v < 0); // shift-reduce
+#ifdef collision_process
+						log_collision_macro(pre_condition, condition, s, v);
+						cout << "!!!!!!! Collision occurs, but we choose REDUCE rather than SHIFT !!!!!!!" << std::endl;
+						cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" ["
+							<< pre_condition << "->" << condition << "]" << std::endl;
+						cout << "Reduce: [" << pre_condition << "], id: " << -v
+							<< ", with following symbol \""
+							<< info->terminate2StringMap[s.type] << "\"" << std::endl;
+						return;
+#else
+						generateCollisionException(pre_condition, s, v, condition);
+#endif // collision_process
+					}
+					v = condition;
 
-			fillShiftGotoAction();
+					// shift
+					if (s.isTerminate)
+						cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" ["
+						<< pre_condition << "->" << condition << "]" << std::endl;
+					// goto
+					else
+						cout << "GOTO: <" << info->nonterminate2StringMap[s.type] << "> ["
+						<< pre_condition << "->" << condition << "]" << std::endl;
+				}; // end lambda fillShiftGotoAction();
 
-			// if already existed
-			if (is_condition_already)
-				return;
 
+				cout << "\n-------------------------------------------------------\n" << std::endl;
+				// output pre condition
+				if constexpr (test)outputConditionPackage<true>(pre_pack, condition, pre_condition);
+				// output new condition
+				if (!is_condition_already) // only output 1 time of new condition
+					if constexpr (test)outputConditionPackage<false>(p, condition);
+
+				fillShiftGotoAction();
+
+				// if already existed
+				if (is_condition_already)
+					return;
+			} // end prepare and output
+			const std::size_t condition = package_condition_map[p];
 
 			// reduce ----------------------------------------
 			for (auto const&[pro, symbol_type_set] : p)
@@ -391,7 +396,7 @@ namespace rules_translator {
 				{
 					ll *line = actionTable[condition];
 					const ll reduceID = -((ll)pro.p.productionId);
-					cout << "Reduce: " << condition << ", id: " << pro.p.productionId << endl;
+					cout << "Reduce: [" << condition << "], id: " << pro.p.productionId << endl;
 					for (auto n : symbol_type_set)
 					{
 						ll &v = line[n];
@@ -449,15 +454,15 @@ namespace rules_translator {
 			if (cond_or_id1 > 0 || cond_or_id2 > 0) {
 				const int shift = (cond_or_id1 > cond_or_id2) ? cond_or_id1 : cond_or_id2;
 				if (sym.isTerminate)
-					cout << "SHIFT: \"" << info->terminate2StringMap[sym.type] << "\" "
-					<< condition << "->" << shift << endl;
+					cout << "SHIFT: \"" << info->terminate2StringMap[sym.type] << "\" ["
+					<< condition << "->" << shift << "]" << endl;
 				else
 					cout << "WTF??? " << info->nonterminate2StringMap[sym.type] << endl;
 			}
 
 			auto outputProduction = [this, condition](ll id) {
 				const auto &p = info->productions[id];
-				cout << "Reduce: " << condition << ", id: " << p.productionId << ", "
+				cout << "Reduce: [" << condition << "], id: " << p.productionId << ", "
 					<< info->nonterminate2StringMap[p.left] << ": { ";
 				for (const auto &sym : p.right)
 					if (sym.isTerminate)
@@ -478,9 +483,28 @@ namespace rules_translator {
 
 
 		template <bool consoleOutput = false>
-		void outputResult() {
-			stringstream ss;
+		void outputResult()
+		{
 
+			// output map<productionID, name> for debug
+			{
+				std::ostringstream os;
+				os << "\nstd::unordered_map<int, std::string> productionID2name = {\n";
+				for (const Production p : info->productions)
+				{
+					if (p.productionId == 0)
+						os << "{ 0, \"$eof$\" },\n";
+					else
+						os << "{ " << p.productionId << ", \""
+						<< info->nonterminate2StringMap[p.left] << "\" },\n";
+				}
+				os << "};\n\n";
+				fi.writeln(os.str());
+			}
+
+
+			// output Action and Goto Table
+			stringstream ss;
 			auto outputCounselTable = [&ss](const string &name, CounselTable &table) {
 				ss << "const ll " << name << "[" << table.lineAmount() << "][" << table.columnAmount() << "] = {" << std::endl;
 				for (size_t i = 0; i < table.lineAmount(); ++i) {
@@ -493,6 +517,7 @@ namespace rules_translator {
 			};
 
 			ss << "using ll = int;" << std::endl;
+			ss << "// row 0 has no use !!!!!!" << std::endl;
 
 			// action_table
 			outputCounselTable("action_table", actionTable);

@@ -11,9 +11,6 @@
 #include "../util/TranslateException.h"
 #include <unordered_set>
 
-//#include <iostream>
-//using std::cout;
-//using std::endl;
 
 using std::unordered_set;
 using std::pair;
@@ -288,7 +285,7 @@ namespace rules_translator {
 						sprintf(title, "object_type __process_%lu(object_type content[]) {", next_production_id);
 
 						fi.writeln(title);
-						//                    string &ts = info.nonterminateType_CppClassName_map.find(p.left)->second;
+
 						const auto &it = info.nonterminateType_CppClassName_map.find(p.left);
 						const string &ts = it == info.nonterminateType_CppClassName_map.end() ? "default_object_type" : it->second;
 						fi.write("object_type r = ").write(ts).writeln("{};");
