@@ -23,7 +23,7 @@ namespace rules_translator {
 			"#include <stack>\n"
 			"#include <optional>\n"
 			"\n\n"
-			"#define OUTPUT_DFA\n"
+			"// #define OUTPUT_DFA // define in test_xxx.cpp before include the file\n"
 			"#ifdef OUTPUT_DFA\n"
 			"#include \"../test/test.h\"\n"
 			"			using namespace Mini_C::TEST;\n"

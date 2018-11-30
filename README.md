@@ -1,5 +1,14 @@
 #  Rules Translator README
 
+
+
+### MODIFY THE FILE PATH BEFORE STARTING THE PROGRAM TO GENERATE LR1 TABLE
+
+- [`WholeTest.cpp`]      : 2 paths
+- [`TableGenerator.cpp`] : `out_path`
+
+-----
+
 This project is a support tool project for the Mini_C project. Aiming at let the syntactic parse process of Mini_C can focus on the expression of information rather than the form. And this can translate all of the LR(1) grammer. Basically, it takes in the information that needed to distinguish a grammer, like: the terminate and nonterminate symbol set, the "production" list and the first nonterminate symbol, then output the ActionTable and GotoTable in the form of C++ code. So, it takes in a ".tsl" file and output a ".cpp" file.
 
 ## How to Use This Project

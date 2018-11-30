@@ -586,9 +586,12 @@ namespace rules_translator {
 		{
 			delete info;
 #ifdef output_log
-			out << "\n-------------------------------------------------------\n" << std::endl
-				<< "Collision choose list:" << std::endl
-				<< "\n-------------------------------------------------------" << std::endl;
+			console_out << "Collision choose list: "
+				<< log_collision.size() << " entries" << std::endl;
+
+			out << "\n--------------------------------------------------------------------------------------------------------------\n" << std::endl
+				<< "Collision choose list: " << log_collision.size() << " entries" << std::endl
+				<< "\n--------------------------------------------------------------------------------------------------------------" << std::endl;
 			for (auto const[str1, str2] : log_collision)
 			{
 				out << std::endl << str1 << std::endl << str2 << std::endl;
