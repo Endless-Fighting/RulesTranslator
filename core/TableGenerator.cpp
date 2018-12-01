@@ -240,8 +240,6 @@ namespace rules_translator {
 			p[ProductionWithDoc(info->productions[0])];
 			const auto &sset = first[info->nonterminateType_amount];
 			symbol s(true, *sset.begin());
-			for (auto si : sset)
-				actionTable[0][si] = 1;
 			if constexpr (test)calculateCondition<true>(p, 0, s);
 			else calculateCondition(p, 0, s);
 		}
@@ -438,8 +436,8 @@ namespace rules_translator {
 		} // end function void calculateCondition();
 
 
-		// SHIFT  : condition > 0
-		// REDUCE : id < 0
+	// SHIFT  : condition > 0
+	// REDUCE : id < 0
 		void generateCollisionException(
 			ll condition,
 			symbol sym,
