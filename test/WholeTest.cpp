@@ -17,7 +17,7 @@ namespace rules_translator::test
 	{
 		FileInteractor fi(
 			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule.tsl",
-			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule.h");
+			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/lr1.hpp");
 		AnalyzerGenerator analyzer(fi);
 		analyzer.generate_head();
 
