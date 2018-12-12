@@ -346,12 +346,19 @@ namespace rules_translator {
 		Preprocessor_Impl(FileInteractor &fi) : fi(fi), info(*(new RulesInfo)) {}
 		RulesInfo *generateInfo() {
 			fillNameMetaData();
+
+			// add anonymous namespace{} for __process_xx()
+			fi.writeln("\nnamespace {\n");
+
 			generateProductions(fillBindingList());
 			info.nonterminateType_amount = nt_next_id;
 			for (auto p : terminate_typeMap)
 				info.terminate2StringMap.insert(std::make_pair(p.second, p.first));
 			for (auto p : nonterminate_typeMap)
 				info.nonterminate2StringMap.insert(std::make_pair(p.second, p.first));
+
+
+			fi.writeln("} // end anonymous namespace\n");
 
 			return &info;
 		}
