@@ -14,7 +14,7 @@ using std::vector;
 
 namespace rules_translator {
 
-	using ll = long long;
+	using ll = int;
 
 	// this is the class of tables
 	// that needs to be counseled

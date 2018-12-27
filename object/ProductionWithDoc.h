@@ -18,12 +18,10 @@ namespace rules_translator {
 	// used by the TableGenerator
 	struct ProductionWithDoc {
 		const size_t docPos;
-		const Production p;
-		ProductionWithDoc(ProductionWithDoc &&pwd) : p(std::move(pwd.p)), docPos(pwd.docPos) {}
-		ProductionWithDoc(const ProductionWithDoc &) = default;
-		ProductionWithDoc(Production &&p) : p(p), docPos(0) {}
+		const Production& p;
 		ProductionWithDoc(const Production &p) : p(p), docPos(0) {}
 		ProductionWithDoc(const Production &p, size_t docPos) : p(p), docPos(docPos) {}
+		ProductionWithDoc(const ProductionWithDoc &) = default;
 		ProductionWithDoc next() const {
 			if (end())
 				throw TranslateException("Trying to get a not exist next.");

@@ -29,18 +29,19 @@ namespace rules_translator {
 		};
 
 		namespace utils {
-			//            unordered_set<char> dividers = {
-			//                ' ', '\n', '\t', '\r'
-			//            };
+
 			using t = FileInteractor::ReadContentType;
-			unordered_map<string, t> keywordMap = {
-				{ "terminate", t::word_terminate }, { "enum", t::word_enum }, { "class", t::word_class }, { "token_type", t::word_token_type }, { "get_type", t::word_get_type }, { "using", t::word_using },
+			const unordered_map<string, t> keywordMap =
+			{
+				{ "terminate", t::word_terminate },
+				{ "enum", t::word_enum },
+				{ "class", t::word_class },
+				{ "token_type", t::word_token_type },
+				{ "get_type", t::word_get_type },
+				{ "using", t::word_using },
 			};
 		}
-		//
-		//        inline bool isDivider(const char c) {
-		//            return utils::dividers.find(c) != utils::dividers.end();
-		//        }
+
 		inline bool isWordBegin(const char c) {
 			return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 		}
@@ -52,7 +53,9 @@ namespace rules_translator {
 		}
 		inline FileInteractor::ReadContentType getWordType(const string &s) {
 			auto f = utils::keywordMap.find(s);
-			return f == utils::keywordMap.end() ? FileInteractor::ReadContentType::word : f->second;
+			return f == utils::keywordMap.end()
+				? FileInteractor::ReadContentType::word
+				: f->second;
 		}
 
 	}
@@ -119,11 +122,7 @@ namespace rules_translator {
 			// other content is word
 			if (finished) return std::nullopt;
 
-			//            // here use while to avoid empty line
-			//            while (buffered_pos == buffer.length()) {
-			//                getline(origin, buffer);
-			//                buffered_pos = 0;
-			//            }
+			// here use while to avoid empty line
 			if (buffer.length() <= buffered_pos) {
 				origin >> buffer;
 				buffered_pos = 0;
@@ -178,7 +177,6 @@ namespace rules_translator {
 			case '{':
 				// must not delete the dividers, for some divider in block may be very important in dividing inside words
 				while (++buffered_pos < buffer.length()) {
-					//                        if (!utils::isDivider(buffer[buffered_pos]))
 					if (buffer[buffered_pos] == '}') {
 						if (!(--left_count))
 							break;
@@ -202,9 +200,6 @@ namespace rules_translator {
 					ss << buffer << "}";
 				}
 				t = FileInteractor::ReadContentType::block;
-				//                    for (auto it = buffer.begin(); it != buffer.end(); ++it)
-				//                        if (!utils::isDivider(*it))
-				//                            ss << *it;
 				ss << buffer;
 				origin >> buffer;
 				buffered_pos = 0;

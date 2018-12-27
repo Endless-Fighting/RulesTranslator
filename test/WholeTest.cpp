@@ -22,8 +22,8 @@ namespace rules_translator::test
 		analyzer.generate_head();
 
 		Preprocessor pss(fi);
-		RulesInfo *info = pss.generateInfo();
-		TableGenerator generator(fi, info); // info is destructed in ~TableGenerator();
+		RulesInfo* info = pss.generateInfo(); // info has been deleted in ~Preprocessor();
+		TableGenerator generator(fi, info);
 		generator.generate();
 
 		analyzer.generate_tail();

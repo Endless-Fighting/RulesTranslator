@@ -338,40 +338,6 @@ namespace rules_translator {
 				}
 
 
-				auto fillShiftGotoAction = [this, condition, pre_condition, &s]() {
-					ll &v = s.isTerminate ? actionTable[pre_condition][s.type] : gotoTable[pre_condition][s.type];
-					// in fact, no collision for GOTO, just for assignment below.
-					// just shift-reduce or (reduce-reduce???) collision.
-					bool is_collision = false;
-					if (v != 0 && v != condition)
-					{
-						assert(v < 0); // shift-reduce
-#ifdef collision_process
-						log_collision_macro(pre_condition, condition, s, v);
-						cout << "!!!!!!! Collision occurs, but we choose REDUCE rather than SHIFT !!!!!!!" << std::endl;
-						cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" ["
-							<< pre_condition << "->" << condition << "]" << std::endl;
-						cout << "Reduce: [" << pre_condition << "], id: " << -v
-							<< ", with following symbol \""
-							<< info->terminate2StringMap[s.type] << "\"" << std::endl;
-						return;
-#else
-						generateCollisionException(pre_condition, s, v, condition);
-#endif // collision_process
-					}
-					v = condition;
-
-					// shift
-					if (s.isTerminate)
-						cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" ["
-						<< pre_condition << "->" << condition << "]" << std::endl;
-					// goto
-					else
-						cout << "GOTO: <" << info->nonterminate2StringMap[s.type] << "> ["
-						<< pre_condition << "->" << condition << "]" << std::endl;
-				}; // end lambda fillShiftGotoAction();
-
-
 				cout << "\n-------------------------------------------------------\n" << std::endl;
 				// output pre condition
 				if constexpr (test)outputConditionPackage<true>(pre_pack, condition, pre_condition);
@@ -379,13 +345,51 @@ namespace rules_translator {
 				if (!is_condition_already) // only output 1 time of new condition
 					if constexpr (test)outputConditionPackage<false>(p, condition);
 
-				fillShiftGotoAction();
+
+				// fill shift-goto table
+				{
+					ll &v = s.isTerminate ? actionTable[pre_condition][s.type] : gotoTable[pre_condition][s.type];
+					// in fact, no collision for GOTO, just for assignment below.
+					// just shift-reduce or (reduce-reduce???) collision.
+					if (v != 0 && v != condition) // collision
+					{
+						assert(v < 0); // shift-reduce
+#ifdef collision_process
+						log_collision_macro(pre_condition, condition, s, v);
+						v = condition; // choose shift
+						cout << "!!!!!!! Collision occurs, but we choose SHIFT rather than REDUCE !!!!!!!" << std::endl;
+						cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" ["
+							<< pre_condition << "->" << condition << "]" << std::endl;
+						cout << "Reduce: [" << pre_condition << "], id: " << -v
+							<< ", with following symbol \""
+							<< info->terminate2StringMap[s.type] << "\"" << std::endl;
+#else
+						generateCollisionException(pre_condition, s, v, condition);
+#endif // collision_process
+					}
+					else // no collision
+					{
+						v = condition;
+
+						// shift
+						if (s.isTerminate)
+							cout << "SHIFT: \"" << info->terminate2StringMap[s.type] << "\" ["
+							<< pre_condition << "->" << condition << "]" << std::endl;
+						// goto
+						else
+							cout << "GOTO: <" << info->nonterminate2StringMap[s.type] << "> ["
+							<< pre_condition << "->" << condition << "]" << std::endl;
+					}
+				} // end fill shift-goto table
+
 
 				// if already existed
 				if (is_condition_already)
 					return;
 			} // end prepare and output
+
 			const std::size_t condition = package_condition_map[p];
+
 
 			// reduce ----------------------------------------
 			for (auto const&[pro, symbol_type_set] : p)
@@ -393,15 +397,13 @@ namespace rules_translator {
 				if (pro.end())
 				{
 					ll *line = actionTable[condition];
-					const ll reduceID = -((ll)pro.p.productionId);
+					const ll reduceID = -static_cast<ll>(pro.p.productionId);
 					cout << "Reduce: [" << condition << "], id: " << pro.p.productionId << endl;
 					for (auto n : symbol_type_set)
 					{
 						ll &v = line[n];
 						if (v && v != reduceID)
-							generateCollisionException(
-								condition, symbol(true, n),
-								v, reduceID);
+							generateCollisionException(condition, symbol(true, n), v, reduceID);
 
 						v = reduceID;
 					}
@@ -411,6 +413,7 @@ namespace rules_translator {
 
 			// find where can it go next
 			unordered_set<symbol> next;
+
 
 			// shift ----------------------------------------
 			for (auto const&[pwd, symbol_type_set] : p)
@@ -433,11 +436,12 @@ namespace rules_translator {
 
 			} // end DFS
 
+
 		} // end function void calculateCondition();
 
 
-	// SHIFT  : condition > 0
-	// REDUCE : id < 0
+		// SHIFT  : condition > 0
+		// REDUCE : id < 0
 		void generateCollisionException(
 			ll condition,
 			symbol sym,
@@ -458,16 +462,20 @@ namespace rules_translator {
 					cout << "WTF??? " << info->nonterminate2StringMap[sym.type] << endl;
 			}
 
-			auto outputProduction = [this, condition](ll id) {
+			auto outputProduction = [this, condition, sym](ll id) {
 				const auto &p = info->productions[id];
 				cout << "Reduce: [" << condition << "], id: " << p.productionId << ", "
 					<< info->nonterminate2StringMap[p.left] << ": { ";
+
 				for (const auto &sym : p.right)
+				{
 					if (sym.isTerminate)
 						cout << "\"" << info->terminate2StringMap[sym.type] << "\" ";
 					else
 						cout << info->nonterminate2StringMap[sym.type] << " ";
-				cout << "};" << endl;
+				}
+
+				cout << "}, \"" << info->terminate2StringMap[sym.type] << "\"" << endl;
 			};
 
 			if (cond_or_id1 <= 0)
@@ -607,7 +615,6 @@ namespace rules_translator {
 
 		~TableGenerator_Impl()
 		{
-			delete info;
 #ifdef output_log
 			console_out << "Collision choose list: "
 				<< log_collision.size() << " entries" << std::endl;

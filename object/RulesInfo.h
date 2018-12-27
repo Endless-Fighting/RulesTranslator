@@ -24,5 +24,4 @@ namespace rules_translator {
 	};
 
 }
-
 #endif /* RulesInfo_h */

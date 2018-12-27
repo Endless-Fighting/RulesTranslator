@@ -32,7 +32,7 @@ namespace rules_translator {
 		vector<symbol> right;
 		size_t productionId;
 		Production() = default;
-		Production(Production &&p) : left(p.left), right(std::move(p.right)), productionId(p.productionId) {}
+		Production(Production &&p) noexcept : left(p.left), right(std::move(p.right)), productionId(p.productionId) {}
 		Production(const Production&) = default;
 		Production &operator=(const Production &) = default;
 		bool operator==(const Production &p) const {
@@ -40,6 +40,4 @@ namespace rules_translator {
 		}
 	};
 }
-
-
 #endif /* Production_h */

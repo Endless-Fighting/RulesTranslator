@@ -63,16 +63,23 @@ namespace rules_translator {
 	class Preprocessor_Impl {
 		using rct = FileInteractor::ReadContentType;
 		using rc = FileInteractor::ReadContent;
+
+
 		FileInteractor &fi;
-		RulesInfo &info;
+		RulesInfo* info;
+
 		unordered_map<string, symbol_type> terminate_typeMap;
 		unordered_map<string, symbol_type> nonterminate_typeMap;
-
 		unordered_set<size_t> with_process_set;
+		// append type is the last one, to avoid being set in the table // 0 is the appended type
+		symbol_type nt_next_id = 0;
+
 
 		constexpr const static rct path_terminate[] = { rct::word_terminate, rct::equal, rct::word_enum, rct::word_class };
 		constexpr const static rct path_token_type[] = { rct::semicolon, rct::word_token_type, rct::equal };
 		constexpr const static rct path_get_type[] = { rct::semicolon, rct::word_get_type, rct::equal };
+
+
 		void getAlongPath(const rct *path, size_t pathLength, optional<rc> &buffer) {
 			for (size_t i = 0; i < pathLength && buffer; ++i, buffer = fi.read())
 				if (buffer->type != path[i])
@@ -80,20 +87,23 @@ namespace rules_translator {
 
 			if (!buffer) generateException("Unexpected end.");
 		}
+
+
 		void generateException(const string &s) {
 			throw TranslateException(s);
 		}
 
-		// append type is the last one, to avoid being set in the table // 0 is the appended type
-		symbol_type nt_next_id = 0;
+
 		symbol_type getNonterminateType(const string &s) {
 			const auto &it = nonterminate_typeMap.find(s);
 			if (it != nonterminate_typeMap.end())
 				return it->second;
 			nonterminate_typeMap[s] = nt_next_id;
-			info.nonterminateType_CppClassName_map[nt_next_id] = "default_object_type";
+			info->nonterminateType_CppClassName_map[nt_next_id] = "default_object_type";
 			return nt_next_id++;
 		}
+
+
 		// main processes
 		void fillNameMetaData() {
 			// get terminate info
@@ -129,7 +139,7 @@ namespace rules_translator {
 				terminate_typeMap[tempv[i]] = i;
 			}
 
-			info.eof = tempv.size();
+			info->eof = tempv.size();
 
 			// get token_type
 			buffer = fi.read();
@@ -143,8 +153,10 @@ namespace rules_translator {
 			if (buffer.value().type != rct::word)
 				generateException("Expected a word to specify the name of the function used to get type");
 			fi.write(enum_class_name).write(" (*get_type)(const token_type&) = &").write(buffer->content).writeln(";");
-			fi.read();
+			(void)fi.read();
 		}
+
+
 		// the return type is the first nonterminate
 		optional<rc> fillBindingList() {
 			optional<rc> buffer = fi.read(); // used to generate object type
@@ -163,7 +175,7 @@ namespace rules_translator {
 				if (buffer.value().type != rct::word)
 					generateException("Expected a word represented a class name in C++ language");
 				objectTypes.insert(buffer->content);
-				info.nonterminateType_CppClassName_map[nt_next_id++] = std::move(buffer->content);
+				info->nonterminateType_CppClassName_map[nt_next_id++] = std::move(buffer->content);
 				buffer = fi.read();
 				if (buffer.value().type != rct::semicolon)
 					generateException("Expected a semicolon after a using statement");
@@ -179,6 +191,8 @@ namespace rules_translator {
 
 			return buffer;
 		}
+
+
 		void generateProductions(optional<rc> &&buffer) {
 			size_t next_production_id = 1; // start from 1, because 0 is the default production
 			size_t temp_left = -1;
@@ -226,34 +240,11 @@ namespace rules_translator {
 				p.productionId = next_production_id;
 				// block tackle
 				if (buffer && buffer.value().type == rct::block) {
-					do { // give a break point
+					do {
+						// give a break point
 						// change all $<num> and $$ to formal name and return what the <num>s are
 						// $<num> will be changed to __c<num>
 						// $$ will be changed to __r
-
-						// an error in using iterator
-	//                    auto modifyBlock = [] (string &s) -> unordered_set<size_t> {
-	//                        unordered_set<size_t> nums;
-	//                        for (auto it = s.begin(); it != s.end(); ++it) {
-	//                            if (*it == '$' && it + 1 != s.end()) {
-	//                                if (it[1] == '$') {
-	//                                    s.replace(it, it + 2, "__r");
-	//                                }
-	//                                else if (utils::isNumber(it[1])) {
-	//                                    s.replace(it, it + 1, "__c");
-	//                                    cout << *it << it[1] << it[2] << it[3] << endl;
-	//                                    it += 3;
-	//                                    size_t temp = *it - '0';
-	//                                    while (utils::isNumber(it[1])) {
-	//                                        ++it;
-	//                                        temp = temp * 10 + *it - '0';
-	//                                    }
-	//                                    nums.insert(temp);
-	//                                }
-	//                            }
-	//                        }
-	//                        return nums;
-	//                    };
 						if (utils::trimMeaninglessDividers(buffer->content).empty()) break;
 						auto modifyBlock = [](string &s) -> unordered_set<size_t> {
 							unordered_set<size_t> nums;
@@ -266,7 +257,6 @@ namespace rules_translator {
 									}
 									else if (c >= '1' && c <= '9') {
 										s.replace(s.begin() + i, s.begin() + i + 1, "__c");
-										// cout << *it << it[1] << it[2] << it[3] << endl;
 										i += 3;
 										size_t temp = c - '0';
 										while (i + 1 < s.length() && utils::isNumber(s[i + 1])) {
@@ -286,8 +276,8 @@ namespace rules_translator {
 
 						fi.writeln(title);
 
-						const auto &it = info.nonterminateType_CppClassName_map.find(p.left);
-						const string &ts = it == info.nonterminateType_CppClassName_map.end() ? "default_object_type" : it->second;
+						const auto it = info->nonterminateType_CppClassName_map.find(p.left);
+						const string &ts = it == info->nonterminateType_CppClassName_map.end() ? "default_object_type" : it->second;
 						fi.write("object_type r = ").write(ts).writeln("{};");
 						fi.writeln("std::visit(overloaded {");
 						fi.write("[] (");
@@ -298,11 +288,10 @@ namespace rules_translator {
 								generateException("Block content out of range.");
 							symbol &s = p.right[i - 1];
 							if (s.isTerminate)
-								//                            fi.write(info.token_type).write(" &&");
 								fi.write("token_type &");
 							else {
-								const auto &it = info.nonterminateType_CppClassName_map.find(s.type);
-								if (it == info.nonterminateType_CppClassName_map.end())
+								const auto &it = info->nonterminateType_CppClassName_map.find(s.type);
+								if (it == info->nonterminateType_CppClassName_map.end())
 									fi.write("default_object_type &");
 								else
 									fi.write(it->second).write(" &");
@@ -328,9 +317,9 @@ namespace rules_translator {
 					} while (false);
 					buffer = fi.read();
 				}
-				info.productions.emplace_back(std::move(p));
+				info->productions.emplace_back(std::move(p));
 				// hold reference in the set, almost zero construct cost
-				if (!eps.emplace(info.productions[next_production_id - 1]).second)
+				if (!eps.emplace(info->productions[next_production_id - 1]).second)
 					generateException("This production has already existed.");
 				++next_production_id;
 			}
@@ -342,25 +331,28 @@ namespace rules_translator {
 			}
 			fi.writeln("\n};");
 		}
+
+
 	public:
-		Preprocessor_Impl(FileInteractor &fi) : fi(fi), info(*(new RulesInfo)) {}
+		Preprocessor_Impl(FileInteractor &fi) : fi(fi), info(new RulesInfo) {}
+		~Preprocessor_Impl() { delete info; }
+
 		RulesInfo *generateInfo() {
 			fillNameMetaData();
 
-			// add anonymous namespace{} for __process_xx()
+			// add anonymous namespace{} for `__process_xx()`
 			fi.writeln("\nnamespace {\n");
 
 			generateProductions(fillBindingList());
-			info.nonterminateType_amount = nt_next_id;
+			info->nonterminateType_amount = nt_next_id;
 			for (auto p : terminate_typeMap)
-				info.terminate2StringMap.insert(std::make_pair(p.second, p.first));
+				info->terminate2StringMap.insert(std::make_pair(p.second, p.first));
 			for (auto p : nonterminate_typeMap)
-				info.nonterminate2StringMap.insert(std::make_pair(p.second, p.first));
-
+				info->nonterminate2StringMap.insert(std::make_pair(p.second, p.first));
 
 			fi.writeln("} // end anonymous namespace\n");
 
-			return &info;
+			return info;
 		}
 	};
 
