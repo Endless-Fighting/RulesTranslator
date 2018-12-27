@@ -1,6 +1,6 @@
 #  Rules Translator README
 
-
+参考解释器项目：[Mini_C](https://github.com/rsy56640/Mini_C)
 
 ### MODIFY THE FILE PATH BEFORE STARTING THE PROGRAM TO GENERATE LR1 TABLE
 
