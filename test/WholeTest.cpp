@@ -16,8 +16,8 @@ namespace rules_translator::test
 	void test()
 	{
 		FileInteractor fi(
-			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule.tsl",
-			"C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/lr1.hpp");
+			"D:/Git_repositories/Mini_C/doc/rule_origin.tsl",
+			"D:/Git_repositories/Mini_C/src/lr1.hpp");
 		AnalyzerGenerator analyzer(fi);
 		analyzer.generate_head();
 

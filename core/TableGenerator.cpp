@@ -27,7 +27,7 @@ unordered_map<rules_translator::ProductionWithDoc,
 
 std::ostream& console_out = std::cout;
 #define cout out
-const char* out_path = "C:/Users/lenovo/Source/Repos/___RulsTSL/x64/Release/rule.lr1";
+const char* out_path = "D:/Git_repositories/Mini_C/doc/rule.lr1";
 
 
 namespace std {
